@@ -4,8 +4,7 @@ _A simple cat‑catching bot using reinforcement learning_
 
 ## 🚀 Project Overview
 
-This project is developed for the course MCO3 -- Machine Learning under
-the department CSINTSY. The goal is to build an intelligent agent (the
+The goal is to build an intelligent agent (the
 "Catbot") that learns to catch a cat in a simulated environment using
 reinforcement learning techniques.
 
