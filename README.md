@@ -8,7 +8,7 @@ The goal is to build an intelligent agent (the
 "Catbot") that learns to catch a cat in a simulated environment using
 reinforcement learning techniques.
 
-Key points:\
+Key points:
 
 - The environment simulates a "cat" moving around and the agent's goal
   is to catch it.\
