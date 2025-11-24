@@ -39,8 +39,8 @@ def train_bot(cat_name, render: int = -1):
     # training process such as learning rate, exploration rate, etc.            #
     #############################################################################
     
-    learning_rate = 0.8
-    discount_factor = 0.999
+    learning_rate = 0.5
+    discount_factor = 0.99
     
     epsilon = 1
     min_epsilon = 0.01
@@ -53,7 +53,7 @@ def train_bot(cat_name, render: int = -1):
     
     step_penalty = -0.01
     catch_reward = 1000
-    distance_bonus = 0.5
+    distance_bonus = 1.0
     max_steps_per_episode = 60
 
     #############################################################################
