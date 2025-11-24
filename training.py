@@ -9,12 +9,12 @@ from cat_env import make_env
 # TODO: YOU MAY ADD ADDITIONAL IMPORTS OR FUNCTIONS HERE.                   #
 #############################################################################
 
-
-
-
-
-
-
+def decode_state(state: int):
+    a_r = state // 1000
+    a_c = (state // 100) % 10
+    c_r = (state // 10) % 10
+    c_c = state % 10
+    return int(a_r), int(a_c), int(c_r), int(c_c)
 
 #############################################################################
 # END OF YOUR CODE. DO NOT MODIFY ANYTHING BEYOND THIS LINE.                #
@@ -34,20 +34,28 @@ def train_bot(cat_name, render: int = -1):
     
     #############################################################################
     # TODO: YOU MAY DECLARE OTHER VARIABLES AND PERFORM INITIALIZATIONS HERE.   #
+    #############################################################################
     # Hint: You may want to declare variables for the hyperparameters of the    #
     # training process such as learning rate, exploration rate, etc.            #
     #############################################################################
     
-    # Q-learning hyperparameters
-    learning_rate = 0.5     # Alpha: How much we learn from new information
-    discount_factor = 0.99  # Gamma: How much we value future rewards
+    learning_rate = 0.8
+    discount_factor = 0.999
     
-    # Epsilon-greedy strategy parameters for exploration-exploitation trade-off
-    epsilon = 1.0           # Initial exploration rate (100% exploration)
-    max_epsilon = 1.0       # Max exploration rate
-    min_epsilon = 0.01      # Minimum exploration rate
-    decay_rate = 0.001      # Rate at which epsilon decays exponentially
+    epsilon = 1
+    min_epsilon = 0.01
+    epsilon_decay_rate = 0.0005
+
+    rng = np.random.default_rng()
+
+    rewards_per_episode = np.zeros(episodes)
+    ep_steps = []  
     
+    step_penalty = -0.01
+    catch_reward = 1000
+    distance_bonus = 0.5
+    max_steps_per_episode = 60
+
     #############################################################################
     # END OF YOUR CODE. DO NOT MODIFY ANYTHING BEYOND THIS LINE.                #
     #############################################################################
@@ -56,85 +64,79 @@ def train_bot(cat_name, render: int = -1):
         ##############################################################################
         # TODO: IMPLEMENT THE Q-LEARNING TRAINING LOOP HERE.                         #
         ##############################################################################
-        # Hint: These are the general steps you must implement for each episode.       #
+        # Hint: These are the general steps you must implement for each episode.     #
         # 1. Reset the environment to start a new episode.                           #
         # 2. Decide whether to explore or exploit.                                   #
         # 3. Take the action and observe the next state.                             #
         # 4. Since this environment doesn't give rewards, compute reward manually    #
         # 5. Update the Q-table accordingly based on agent's rewards.                #
-        ##############################################################################        
-        
-        # 1. Reset the environment
-        state = env.reset()
-        # Handle environments that return (observation, info) tuple
-        if isinstance(state, tuple):
-            state = state[0]
-            
+        ############################################################################## 
+        state, _ = env.reset()
         terminated = False
         truncated = False
-        
-        while not (terminated or truncated):
-            
-            # 2. Decide whether to explore or exploit (Epsilon-greedy)
-            exploration_tradeoff = random.uniform(0, 1)
-            
-            if exploration_tradeoff < epsilon:
-                # Explore: Select a random action
+        steps = 0
+        total_reward = 0
+
+
+        while (not terminated and not truncated and steps < max_steps_per_episode):
+            if rng.random() < epsilon:
                 action = env.action_space.sample()
             else:
-                # Exploit: Select the best action from the Q-table
-                action = np.argmax(q_table[state])
-                
-            # 3. Take the action and observe the next state and outcome
-            # env.step() returns (next_state, reward, terminated, truncated, info)
-            # We ignore the environment's reward (using '_') as per the hint
-            next_state, _, terminated, truncated, info = env.step(action)
-            
-            if isinstance(next_state, tuple):
-                next_state = next_state[0]
+                q = q_table[state]
+                max_q = np.max(q)
+                best_actions = np.where(q == max_q)[0]
+                action = int(rng.choice(best_actions))
 
-            # 4. Compute reward manually
-            # This is an assumed reward structure based on typical grid-world tasks
-            # - A large positive reward for winning (terminated, but not truncated)
-            # - A large negative reward for losing (truncated, e.g., time ran out)
-            # - A small negative reward for each step to encourage efficiency
-            if terminated and not truncated:
-                reward = 20  # Cat won (e.g., caught the mouse)
-            elif truncated:
-                reward = -10 # Cat lost (e.g., time ran out)
+            a_r, a_c, c_r, c_c = decode_state(state)
+            prev_distance = abs(a_r - c_r) + abs(a_c-c_c)
+            
+            new_state, _, terminated, truncated, _ = env.step(action)
+
+            na_r, na_c, nc_r, nc_c = decode_state(new_state)
+            dist_mid = abs(na_r - c_r) + abs(na_c - c_c)  
+            dist_after = abs(na_r - nc_r) + abs(na_c - nc_c) 
+
+            # compute shaped reward
+            if na_r == nc_r and na_c == nc_c:
+                reward = catch_reward
             else:
-                reward = -1  # Step penalty
-                
-            # 5. Update the Q-table using the Bellman equation
-            # Q(s,a) = Q(s,a) + lr * (r + gamma * max(Q(s',a')) - Q(s,a))
-            
-            # Get the old Q-value for the current state-action pair
-            old_value = q_table[state][action]
-            
-            # Get the maximum Q-value for the next state (the 'greedy' part)
-            next_max_q = np.max(q_table[next_state])
-            
-            # Calculate the new Q-value
-            new_value = old_value + learning_rate * (reward + discount_factor * next_max_q - old_value)
-            
-            # Update the Q-table
-            q_table[state][action] = new_value
-            
-            # Move to the next state
-            state = next_state
-            
-        # After the episode is finished, decay epsilon
-        # This shifts the agent from exploration to exploitation over time
-        epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay_rate * ep)
+                reward = step_penalty
+
+                delta = prev_distance - dist_mid
+                if delta > 0:
+                    reward += delta * distance_bonus
+
+                if dist_after > dist_mid:
+                    reward += step_penalty
+
+            if terminated or truncated:
+                max_q = 0
+            else:
+                max_q = np.max(q_table[new_state])
+
+            old_q = q_table[state][action]
+            difference = reward + discount_factor * max_q - old_q
+            q_table[state][action] = old_q + learning_rate * difference
+
+            state = new_state
+            total_reward += reward
+            steps += 1
         
+        ep_steps.append(steps)
+        rewards_per_episode[ep-1] = total_reward
+
+        epsilon = max(min_epsilon, epsilon*np.exp(-epsilon_decay_rate*ep))
+
+    env.close()    
+
         #############################################################################
         # END OF YOUR CODE. DO NOT MODIFY ANYTHING BEYOND THIS LINE.                #
         #############################################################################
 
         # If rendering is enabled, play an episode every 'render' episodes
-        if render != -1 and (ep == 1 or ep % render == 0):
-            viz_env = make_env(cat_type=cat_name)
-            play_q_table(viz_env, q_table, max_steps=100, move_delay=0.02, window_title=f"{cat_name}: Training Episode {ep}/{episodes}")
-            print('episode', ep)
+    if render != -1 and (ep == 1 or ep % render == 0):
+        viz_env = make_env(cat_type=cat_name)
+        play_q_table(viz_env, q_table, max_steps=100, move_delay=0.02, window_title=f"{cat_name}: Training Episode {ep}/{episodes}")
+        print('episode', ep)
 
     return q_table
