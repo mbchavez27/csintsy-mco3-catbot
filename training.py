@@ -62,8 +62,9 @@ def train_bot(cat_name, render: int = -1):
 
     step_penalty = -1
     catch_reward = 100
-    distance_bonus = 1.0
+    distance_bonus = 1.2
     max_steps_per_episode = 30
+    wall_penalty = 5
 
     #############################################################################
     # END OF YOUR CODE. DO NOT MODIFY ANYTHING BEYOND THIS LINE.                #
@@ -116,9 +117,14 @@ def train_bot(cat_name, render: int = -1):
                 reward = catch_reward
                 print(f"[DEBUG] Step {steps}: Caught the cat! Reward = {reward}")
             else:
-                reward = step_penalty + ((prev_dist - new_dist)) * distance_bonus
+                reward = step_penalty + ((prev_dist - new_dist) * distance_bonus)
                 if new_dist > prev_dist:
                     reward -= 2
+                if (na_r, na_c) in last_positions:
+                    reward -= 0.5
+                if na_r < 0 or na_r > 7 or na_c < 0 or na_c > 7:
+                    reward -= wall_penalty
+                    print(f"[DEBUG] Step {steps}: Hit a wall! Reward = {reward}")
 
             # Q-learning update
             max_q = 0 if terminated or truncated else np.max(q_table[new_state])
