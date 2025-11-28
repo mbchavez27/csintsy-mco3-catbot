@@ -53,7 +53,7 @@ def train_bot(cat_name, render: int = -1):
 
     epsilon = 1
     min_epsilon = 0.01
-    epsilon_decay_rate = 0.0005
+    epsilon_decay_rate = 0.002
 
     rng = np.random.default_rng()
 
@@ -61,9 +61,9 @@ def train_bot(cat_name, render: int = -1):
     ep_steps = []
 
     step_penalty = -1
-    catch_reward = 50
-    distance_bonus = 2.0
-    max_steps_per_episode = 60
+    catch_reward = 100
+    distance_bonus = 1.0
+    max_steps_per_episode = 30
 
     #############################################################################
     # END OF YOUR CODE. DO NOT MODIFY ANYTHING BEYOND THIS LINE.                #
@@ -86,15 +86,18 @@ def train_bot(cat_name, render: int = -1):
         steps = 0
         total_reward = 0
 
+        last_positions = []
+
         while not terminated and not truncated and steps < max_steps_per_episode:
 
-            # epsilon-greedy
+            # epsilon-greedy (pure greedy + exploration)
             if rng.random() < epsilon:
                 action = env.action_space.sample()
             else:
-                q = q_table[state]
-                prob = np.exp(q) / np.sum(np.exp(q))
-                action = int(rng.choice(len(q), p=prob))
+                action = int(np.argmax(q_table[state]))
+                # q = q_table[state]
+                # prob = np.exp(q) / np.sum(np.exp(q))
+                # action = int(rng.choice(len(q), p=prob))
 
             # decode old state
             a_r, a_c, c_r, c_c = decode_state(state)
@@ -113,30 +116,31 @@ def train_bot(cat_name, render: int = -1):
                 reward = catch_reward
             else:
                 reward = step_penalty + ((prev_dist - new_dist)) * distance_bonus
+                if new_dist > prev_dist:
+                    reward -= 2
 
             # Q-learning update
-            if terminated or truncated:
-                reward -= 5
-                max_q = 0
-            else:
-                max_q = np.max(q_table[new_state])
-
+            max_q = 0 if terminated or truncated else np.max(q_table[new_state])
             old_q = q_table[state][action]
             q_table[state][action] = old_q + learning_rate * (
                 reward + discount_factor * max_q - old_q
             )
-
-            # clip Q-values so they don't explode
-            q_table[state][action] = np.clip(q_table[state][action], -100, 100)
+            q_table[state][action] = np.clip(q_table[state][action], -500, 500)
 
             state = new_state
             total_reward += reward
             steps += 1
 
+            # prevent oscillation
+            last_positions.append((na_r, na_c))
+            if len(last_positions) > 4:
+                last_positions.pop(0)
+            if last_positions.count((na_r, na_c)) > 2:
+                break
+
         ep_steps.append(steps)
         rewards_per_episode[ep - 1] = total_reward
-
-        epsilon = max(min_epsilon, epsilon - epsilon_decay_rate)
+        epsilon = min_epsilon + (1 - min_epsilon) * np.exp(-epsilon_decay_rate * ep)
 
     env.close()
 
