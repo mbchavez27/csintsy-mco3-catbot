@@ -20,6 +20,10 @@ def decode_state(state: int):
     return int(a_r), int(a_c), int(c_r), int(c_c)
 
 
+def manhattan(a_r, a_c, b_r, b_c):
+    return abs(a_r - b_r) + abs(a_c - b_c)
+
+
 #############################################################################
 # END OF YOUR CODE. DO NOT MODIFY ANYTHING BEYOND THIS LINE.                #
 #############################################################################
@@ -56,9 +60,9 @@ def train_bot(cat_name, render: int = -1):
     rewards_per_episode = np.zeros(episodes)
     ep_steps = []
 
-    step_penalty = -0.01
-    catch_reward = 1000
-    distance_bonus = 1.0
+    step_penalty = -1
+    catch_reward = 50
+    distance_bonus = 2.0
     max_steps_per_episode = 60
 
     #############################################################################
@@ -88,30 +92,25 @@ def train_bot(cat_name, render: int = -1):
             if rng.random() < epsilon:
                 action = env.action_space.sample()
             else:
-                q = q_table[state]
-                max_q = np.max(q)
-                best_actions = np.where(q == max_q)[0]
-                action = int(rng.choice(best_actions))
+                action = int(np.argmax(q_table[state]))
 
             # decode old state
             a_r, a_c, c_r, c_c = decode_state(state)
-            prev_distance = abs(a_r - c_r) + abs(a_c - c_c)
+
+            prev_dist = manhattan(a_r, a_c, c_r, c_c)
 
             # take action
             new_state, _, terminated, truncated, _ = env.step(action)
 
             # decode new state
             na_r, na_c, nc_r, nc_c = decode_state(new_state)
-
-            agent_new_dist = abs(na_r - c_r) + abs(na_c - c_c)
+            new_dist = manhattan(na_r, na_c, nc_r, nc_c)
 
             # reward shaping
             if na_r == nc_r and na_c == nc_c:
                 reward = catch_reward
             else:
-                reward = (
-                    step_penalty + (prev_distance - agent_new_dist) * distance_bonus
-                )
+                reward = step_penalty + (prev_dist - new_dist) * distance_bonus
 
             # Q-learning update
             if terminated or truncated:
@@ -123,6 +122,9 @@ def train_bot(cat_name, render: int = -1):
             q_table[state][action] = old_q + learning_rate * (
                 reward + discount_factor * max_q - old_q
             )
+
+            # clip Q-values so they don't explode
+            q_table[state][action] = np.clip(q_table[state][action], -500, 500)
 
             state = new_state
             total_reward += reward
