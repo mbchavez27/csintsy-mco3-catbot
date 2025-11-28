@@ -5,6 +5,7 @@ import numpy as np
 import pygame
 from utility import play_q_table
 from cat_env import make_env
+import matplotlib.pyplot as plt
 
 #############################################################################
 # TODO: YOU MAY ADD ADDITIONAL IMPORTS OR FUNCTIONS HERE.                   #
@@ -137,6 +138,30 @@ def train_bot(cat_name, render: int = -1):
     #############################################################################
     # END OF YOUR CODE. DO NOT MODIFY ANYTHING BEYOND THIS LINE.                #
     #############################################################################
+
+    plt.figure(figsize=(10, 4))
+    plt.plot(rewards_per_episode)
+    plt.xlabel("Episode")
+    plt.ylabel("Total Reward")
+    plt.title(f"{cat_name}: Rewards per Episode")
+    plt.grid(True)
+    plt.show()
+
+    cat_r, cat_c = 5, 5
+    q_max_grid = np.zeros((10, 10))
+
+    for a_r in range(10):
+        for a_c in range(10):
+            state = a_r * 1000 + a_c * 100 + cat_r * 10 + cat_c
+            q_max_grid[a_r, a_c] = np.max(q_table[state])
+
+    plt.figure(figsize=(6, 5))
+    plt.imshow(q_max_grid, cmap="hot", origin="lower")
+    plt.colorbar(label="Max Q-value")
+    plt.title(f"{cat_name}: Max Q-values (Cat at {cat_r},{cat_c})")
+    plt.xlabel("Agent Column")
+    plt.ylabel("Agent Row")
+    plt.show()
 
     # If rendering is enabled, play an episode every 'render' episodes
     if render != -1 and (ep == 1 or ep % render == 0):
