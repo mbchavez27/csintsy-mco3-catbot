@@ -88,7 +88,6 @@ def train_bot(cat_name, render: int = -1):
         total_reward = 0
 
         last_positions = []
-        oscillation_counter = 0
 
         while not terminated and not truncated and steps < max_steps_per_episode:
 
@@ -121,12 +120,8 @@ def train_bot(cat_name, render: int = -1):
                 reward = step_penalty + ((prev_dist - new_dist) * distance_bonus)
                 if new_dist > prev_dist:
                     reward -= 2
-                    print(f"[DEBUG] Step {steps}: Moving away from cat, extra penalty")
                 if (na_r, na_c) in last_positions:
                     reward -= 0.5
-                    print(
-                        f"[DEBUG] Step {steps}: Revisiting old position, penalty applied"
-                    )
                 if na_r < 0 or na_r > 7 or na_c < 0 or na_c > 7:
                     reward -= wall_penalty
                     print(f"[DEBUG] Step {steps}: Hit a wall! Reward = {reward}")
@@ -145,16 +140,10 @@ def train_bot(cat_name, render: int = -1):
 
             # prevent oscillation
             last_positions.append((na_r, na_c))
-            if len(last_positions) > 6:
+            if len(last_positions) > 4:
                 last_positions.pop(0)
             if last_positions.count((na_r, na_c)) > 2:
-                oscillation_counter += 1
-                print(f"[DEBUG] Step {steps}: Revisiting old position, penalty applied")
-                if oscillation_counter > 2:
-                    print(
-                        f"[DEBUG] Step {steps}: Breaking to avoid repeated oscillation"
-                    )
-                    break
+                break
 
         ep_steps.append(steps)
         rewards_per_episode[ep - 1] = total_reward
