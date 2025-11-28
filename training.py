@@ -57,9 +57,8 @@ def train_bot(cat_name, render: int = -1):
 
     step_penalty = -0.01
     catch_reward = 1000
-    distance_bonus = 1.0
-    max_steps_per_episode = 60
-
+    distance_bonus = 0.5
+    max_steps_per_episode = 100
     #############################################################################
     # END OF YOUR CODE. DO NOT MODIFY ANYTHING BEYOND THIS LINE.                #
     #############################################################################
@@ -102,15 +101,13 @@ def train_bot(cat_name, render: int = -1):
             # decode new state
             na_r, na_c, nc_r, nc_c = decode_state(new_state)
 
-            agent_new_dist = abs(na_r - c_r) + abs(na_c - c_c)
+            new_dist = abs(na_r - c_r) + abs(na_c - c_c)
 
             # reward shaping
             if na_r == nc_r and na_c == nc_c:
                 reward = catch_reward
             else:
-                reward = (
-                    step_penalty + (prev_distance - agent_new_dist) * distance_bonus
-                )
+                reward = step_penalty + (prev_distance - new_dist) * distance_bonus
 
             # Q-learning update
             if terminated or truncated:
