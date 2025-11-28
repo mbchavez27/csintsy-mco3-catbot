@@ -92,7 +92,9 @@ def train_bot(cat_name, render: int = -1):
             if rng.random() < epsilon:
                 action = env.action_space.sample()
             else:
-                action = int(np.argmax(q_table[state]))
+                q = q_table[state]
+                prob = np.exp(q) / np.sum(np.exp(q))
+                action = int(rng.choice(len(q), p=prob))
 
             # decode old state
             a_r, a_c, c_r, c_c = decode_state(state)
@@ -110,10 +112,11 @@ def train_bot(cat_name, render: int = -1):
             if na_r == nc_r and na_c == nc_c:
                 reward = catch_reward
             else:
-                reward = step_penalty + (prev_dist - new_dist) * distance_bonus
+                reward = step_penalty + ((prev_dist - new_dist)) * distance_bonus
 
             # Q-learning update
             if terminated or truncated:
+                reward -= 5
                 max_q = 0
             else:
                 max_q = np.max(q_table[new_state])
@@ -124,7 +127,7 @@ def train_bot(cat_name, render: int = -1):
             )
 
             # clip Q-values so they don't explode
-            q_table[state][action] = np.clip(q_table[state][action], -500, 500)
+            q_table[state][action] = np.clip(q_table[state][action], -100, 100)
 
             state = new_state
             total_reward += reward
@@ -133,7 +136,7 @@ def train_bot(cat_name, render: int = -1):
         ep_steps.append(steps)
         rewards_per_episode[ep - 1] = total_reward
 
-        epsilon = max(min_epsilon, epsilon * np.exp(-epsilon_decay_rate * ep))
+        epsilon = max(min_epsilon, epsilon - epsilon_decay_rate)
 
     env.close()
 
