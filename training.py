@@ -114,6 +114,7 @@ def train_bot(cat_name, render: int = -1):
             # reward shaping
             if na_r == nc_r and na_c == nc_c:
                 reward = catch_reward
+                print(f"[DEBUG] Step {steps}: Caught the cat! Reward = {reward}")
             else:
                 reward = step_penalty + ((prev_dist - new_dist)) * distance_bonus
                 if new_dist > prev_dist:
