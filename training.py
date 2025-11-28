@@ -163,6 +163,29 @@ def train_bot(cat_name, render: int = -1):
     plt.ylabel("Agent Row")
     plt.show()
 
+    action_to_arrow = {0: "↑", 1: "↓", 2: "←", 3: "→"}
+    policy_grid = np.empty((10, 10), dtype=str)
+
+    for a_r in range(10):
+        for a_c in range(10):
+            state = a_r * 1000 + a_c * 100 + cat_r * 10 + cat_c
+            best_action = np.argmax(q_table[state])
+            policy_grid[a_r, a_c] = action_to_arrow[best_action]
+
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.set_xticks(np.arange(0.5, 10.5, 1))
+    ax.set_yticks(np.arange(0.5, 10.5, 1))
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.grid(True)
+
+    for i in range(10):
+        for j in range(10):
+            ax.text(j, i, policy_grid[i, j], ha="center", va="center", fontsize=16)
+
+    ax.set_title(f"{cat_name}: Policy Map (Cat at {cat_r},{cat_c})")
+    plt.show()
+
     # If rendering is enabled, play an episode every 'render' episodes
     if render != -1 and (ep == 1 or ep % render == 0):
         viz_env = make_env(cat_type=cat_name)
