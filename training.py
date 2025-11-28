@@ -155,52 +155,52 @@ def train_bot(cat_name, render: int = -1):
     # END OF YOUR CODE. DO NOT MODIFY ANYTHING BEYOND THIS LINE.                #
     #############################################################################
 
-    plt.figure(figsize=(10, 4))
-    plt.plot(rewards_per_episode)
-    plt.xlabel("Episode")
-    plt.ylabel("Total Reward")
-    plt.title(f"{cat_name}: Rewards per Episode")
-    plt.grid(True)
-    plt.show()
+    # plt.figure(figsize=(10, 4))
+    # plt.plot(rewards_per_episode)
+    # plt.xlabel("Episode")
+    # plt.ylabel("Total Reward")
+    # plt.title(f"{cat_name}: Rewards per Episode")
+    # plt.grid(True)
+    # plt.show()
 
-    cat_r, cat_c = 5, 5
-    q_max_grid = np.zeros((10, 10))
+    # cat_r, cat_c = 5, 5
+    # q_max_grid = np.zeros((10, 10))
 
-    for a_r in range(10):
-        for a_c in range(10):
-            state = a_r * 1000 + a_c * 100 + cat_r * 10 + cat_c
-            q_max_grid[a_r, a_c] = np.max(q_table[state])
+    # for a_r in range(10):
+    #     for a_c in range(10):
+    #         state = a_r * 1000 + a_c * 100 + cat_r * 10 + cat_c
+    #         q_max_grid[a_r, a_c] = np.max(q_table[state])
 
-    plt.figure(figsize=(6, 5))
-    plt.imshow(q_max_grid, cmap="hot", origin="lower")
-    plt.colorbar(label="Max Q-value")
-    plt.title(f"{cat_name}: Max Q-values (Cat at {cat_r},{cat_c})")
-    plt.xlabel("Agent Column")
-    plt.ylabel("Agent Row")
-    plt.show()
+    # plt.figure(figsize=(6, 5))
+    # plt.imshow(q_max_grid, cmap="hot", origin="lower")
+    # plt.colorbar(label="Max Q-value")
+    # plt.title(f"{cat_name}: Max Q-values (Cat at {cat_r},{cat_c})")
+    # plt.xlabel("Agent Column")
+    # plt.ylabel("Agent Row")
+    # plt.show()
 
-    action_to_arrow = {0: "↑", 1: "↓", 2: "←", 3: "→"}
-    policy_grid = np.empty((10, 10), dtype=str)
+    # action_to_arrow = {0: "↑", 1: "↓", 2: "←", 3: "→"}
+    # policy_grid = np.empty((10, 10), dtype=str)
 
-    for a_r in range(10):
-        for a_c in range(10):
-            state = a_r * 1000 + a_c * 100 + cat_r * 10 + cat_c
-            best_action = np.argmax(q_table[state])
-            policy_grid[a_r, a_c] = action_to_arrow[best_action]
+    # for a_r in range(10):
+    #     for a_c in range(10):
+    #         state = a_r * 1000 + a_c * 100 + cat_r * 10 + cat_c
+    #         best_action = np.argmax(q_table[state])
+    #         policy_grid[a_r, a_c] = action_to_arrow[best_action]
 
-    fig, ax = plt.subplots(figsize=(6, 6))
-    ax.set_xticks(np.arange(0.5, 10.5, 1))
-    ax.set_yticks(np.arange(0.5, 10.5, 1))
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
-    ax.grid(True)
+    # fig, ax = plt.subplots(figsize=(6, 6))
+    # ax.set_xticks(np.arange(0.5, 10.5, 1))
+    # ax.set_yticks(np.arange(0.5, 10.5, 1))
+    # ax.set_xticklabels([])
+    # ax.set_yticklabels([])
+    # ax.grid(True)
 
-    for i in range(10):
-        for j in range(10):
-            ax.text(j, i, policy_grid[i, j], ha="center", va="center", fontsize=16)
+    # for i in range(10):
+    #     for j in range(10):
+    #         ax.text(j, i, policy_grid[i, j], ha="center", va="center", fontsize=16)
 
-    ax.set_title(f"{cat_name}: Policy Map (Cat at {cat_r},{cat_c})")
-    plt.show()
+    # ax.set_title(f"{cat_name}: Policy Map (Cat at {cat_r},{cat_c})")
+    # plt.show()
 
     # If rendering is enabled, play an episode every 'render' episodes
     if render != -1 and (ep == 1 or ep % render == 0):
